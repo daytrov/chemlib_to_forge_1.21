@@ -148,3 +148,8 @@ sourceSets.each {
     it.output.resourcesDir = dir
     it.java.destinationDirectory = dir
 }
+
+// Игнорируем любой Java-код внутри _datagen_disabled
+tasks.withType(JavaCompile).configureEach {
+    exclude '**/_datagen_disabled/**'
+}

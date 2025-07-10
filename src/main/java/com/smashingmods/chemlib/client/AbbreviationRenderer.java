@@ -122,9 +122,12 @@ public class AbbreviationRenderer extends BlockEntityWithoutLevelRenderer {
 					buffer,
 					isGui ? 0xF000F0 : pPackedLight,
 					isGui ? OverlayTexture.NO_OVERLAY : pPackedOverlay,
+					bakedModel);
+
 			if (isGui) {
 				((MultiBufferSource.BufferSource) buffer).endBatch();
 			}
+
 			pPoseStack.popPose();
 
 			if (isGui || isFrame) {

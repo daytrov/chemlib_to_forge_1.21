@@ -1,6 +1,6 @@
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-package com.smashingmods.chemlib.datagen;
+package com.smashingmods.chemlib._datagen_disabled;
 
 import net.minecraft.MethodsReturnNonnullByDefault;
 

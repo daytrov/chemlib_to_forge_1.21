@@ -10,7 +10,7 @@ public class PaintingsRegistry {
     private static final DeferredRegister<PaintingVariant> PAINTINGS = DeferredRegister.create(ForgeRegistries.PAINTING_VARIANTS, ChemLib.MODID);
 
     public static void register(IEventBus eventBus) {
-        PAINTINGS.register("periodic_table", () -> new PaintingVariant(80, 48));
+        PAINTINGS.register("periodic_table", () -> new PaintingVariant(new ResourceLocation(ChemLib.MODID, "periodic_table"), 80, 48));
         PAINTINGS.register(eventBus);
     }
 }

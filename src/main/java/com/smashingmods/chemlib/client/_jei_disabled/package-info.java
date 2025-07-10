@@ -1,6 +1,6 @@
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-package com.smashingmods.chemlib.client.jei;
+package com.smashingmods.chemlib.client._jei_disabled;
 
 import net.minecraft.MethodsReturnNonnullByDefault;
 

@@ -1,4 +1,4 @@
-package com.smashingmods.chemlib.client.jei;
+package com.smashingmods.chemlib.client._jei_disabled;
 
 import com.smashingmods.chemlib.ChemLib;
 import com.smashingmods.chemlib.registry.ItemRegistry;
@@ -16,7 +16,7 @@ public class JEIPlugin implements IModPlugin {
 
     @Override
     public ResourceLocation getPluginUid() {
-        return new ResourceLocation(ChemLib.MODID, "jei_plugin");
+        return ResourceLocation.fromNamespaceAndPath(ChemLib.MODID, "jei_plugin");
     }
 
     @Override

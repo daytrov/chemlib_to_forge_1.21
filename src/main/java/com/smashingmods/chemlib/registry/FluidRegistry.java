@@ -46,22 +46,22 @@ public class FluidRegistry {
                 consumer.accept(new IClientFluidTypeExtensions() {
                     @Override
                     public ResourceLocation getStillTexture() {
-                        return new ResourceLocation("block/water_still");
+                        return ResourceLocation.fromNamespaceAndPath("block/water_still");
                     }
 
                     @Override
                     public ResourceLocation getFlowingTexture() {
-                        return new ResourceLocation("block/water_flow");
+                        return ResourceLocation.fromNamespaceAndPath("block/water_flow");
                     }
 
                     @Override
                     public ResourceLocation getOverlayTexture() {
-                        return new ResourceLocation("block/water_overlay");
+                        return ResourceLocation.fromNamespaceAndPath("block/water_overlay");
                     }
 
                     @Override
                     public ResourceLocation getRenderOverlayTexture(Minecraft mc) {
-                        return new ResourceLocation("minecraft", "textures/misc/underwater.png");
+                        return ResourceLocation.fromNamespaceAndPath("minecraft", "textures/misc/underwater.png");
                     }
                     @Override
                     public int getTintColor() {

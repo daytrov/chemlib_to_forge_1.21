@@ -41,11 +41,11 @@ public class FluidEffectsTooltipUtility {
     public static void addTooltipEffects(List<MobEffectInstance> pEffects, List<Component> pTooltips) {
         List<Pair<Attribute, AttributeModifier>> attributeModifierPairList = Lists.newArrayList();
         if (pEffects.isEmpty()) {
-            pTooltips.add(MutableComponent.create(new LiteralContents(" ")));
+            pTooltips.add(Component.literal(" "));
             pTooltips.add(MutableComponent.create(new TranslatableContents("chemlib.effect.on_hit", null, TranslatableContents.NO_ARGS)).withStyle(ChatFormatting.UNDERLINE).append(":"));
             pTooltips.add(Component.translatable("effect.none").withStyle(ChatFormatting.GRAY));
         } else {
-            pTooltips.add(MutableComponent.create(new LiteralContents(" ")));
+            pTooltips.add(Component.literal(" "));
             pTooltips.add(MutableComponent.create(new TranslatableContents("chemlib.effect.on_hit", null, TranslatableContents.NO_ARGS)).withStyle(ChatFormatting.UNDERLINE).append(":"));
             for (MobEffectInstance effectInstance : pEffects) {
                 MutableComponent mutableComponent = Component.translatable(effectInstance.getDescriptionId());

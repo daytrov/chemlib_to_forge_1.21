@@ -1,4 +1,4 @@
-package com.smashingmods.chemlib.datagen;
+package com.smashingmods.chemlib._datagen_disabled;
 
 import com.smashingmods.chemlib.ChemLib;
 import com.smashingmods.chemlib.api.ChemicalItemType;

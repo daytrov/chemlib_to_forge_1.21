@@ -6,6 +6,7 @@ import net.minecraft.world.entity.decoration.PaintingVariant;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
+import java.util.Objects;
 
 public class PaintingsRegistry {
 
@@ -15,7 +16,12 @@ public class PaintingsRegistry {
     public static void register(IEventBus eventBus) {
 
         PAINTINGS.register("periodic_table", () -> new PaintingVariant(
-                ResourceLocation.of(ChemLib.MODID + ":periodic_table", ':'), 80, 48));
+                80,   // width
+                48,   // height
+                Objects.requireNonNull(
+                        ResourceLocation.tryParse(ChemLib.MODID + ":periodic_table"),
+                        "Invalid RL for periodic_table")
+        ));
 
         PAINTINGS.register(eventBus);
     }

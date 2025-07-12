@@ -1,99 +1,110 @@
 package com.smashingmods.chemlib.api.utility;
 
-import com.google.common.collect.Lists;
-import com.smashingmods.chemlib.registry.ItemRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffectUtil;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.ArrayList;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
-public class FluidEffectsTooltipUtility {
+/**
+ * Tooltip helper for fluids — fully compatible with Minecraft&nbsp;1.21 (official mappings).
+ * Shows both potion effects and their attribute modifiers, matching vanilla formatting.
+ */
+public final class FluidEffectsTooltipUtility {
 
-    public static List<Component> getBucketEffectTooltipComponents(ItemStack pStack) {
-        List<Component> componentList = new ArrayList<>();
+    private FluidEffectsTooltipUtility() {}
 
-        ForgeRegistries.FLUIDS.getResourceKey(((BucketItem) pStack.getItem()).getFluid()).ifPresent(fluidResourceKey -> {
-            String chemicalName = StringUtils.removeEnd(fluidResourceKey.location().getPath(), "_fluid");
-            AtomicReference<List<MobEffectInstance>> effectList = new AtomicReference<>();
-            ItemRegistry.getElementByName(chemicalName).ifPresent(element -> effectList.set(element.getEffects()));
-            ItemRegistry.getCompoundByName(chemicalName).ifPresent(compound -> effectList.set(compound.getEffects()));
-            addTooltipEffects(effectList.get(), componentList);
-        });
-        return componentList;
-    }
+    /**
+     * Adds lines describing all effects of a fluid to the given tooltip list.
+     *
+     * @param tooltips       Tooltip lines list (mutable).
+     * @param effects        Effects provided by the fluid.
+     * @param showDuration   Whether to show duration.
+     * @param showAttributes Whether to append attribute‑modifier lines.
+     */
+    public static void addFluidEffectTooltipLines(List<Component> tooltips,
+                                                  List<MobEffectInstance> effects,
+                                                  boolean showDuration,
+                                                  boolean showAttributes) {
+        if (effects.isEmpty()) return;
 
-    public static void addTooltipEffects(List<MobEffectInstance> pEffects, List<Component> pTooltips) {
-        List<Pair<Attribute, AttributeModifier>> attributeModifierPairList = Lists.newArrayList();
-        if (pEffects.isEmpty()) {
-            pTooltips.add(Component.literal(" "));
-            pTooltips.add(MutableComponent.create(new TranslatableContents("chemlib.effect.on_hit", null, TranslatableContents.NO_ARGS)).withStyle(ChatFormatting.UNDERLINE).append(":"));
-            pTooltips.add(Component.translatable("effect.none").withStyle(ChatFormatting.GRAY));
-        } else {
-            pTooltips.add(Component.literal(" "));
-            pTooltips.add(MutableComponent.create(new TranslatableContents("chemlib.effect.on_hit", null, TranslatableContents.NO_ARGS)).withStyle(ChatFormatting.UNDERLINE).append(":"));
-            for (MobEffectInstance effectInstance : pEffects) {
-                MutableComponent mutableComponent = Component.translatable(effectInstance.getDescriptionId());
-                MobEffect effect = effectInstance.getEffect();
-                Map<Attribute, AttributeModifier> attributeModifierMap = effect.getAttributeModifiers();
+        tooltips.add(Component.literal(" "));
 
-                if (!attributeModifierMap.isEmpty()) {
-                    for (Map.Entry<Attribute, AttributeModifier> attributeModifierEntry : attributeModifierMap.entrySet()) {
-                        AttributeModifier entryValue = attributeModifierEntry.getValue();
-                        AttributeModifier attributeModifier = new AttributeModifier(entryValue.getName(), effect.getAttributeModifierValue(effectInstance.getAmplifier(), entryValue), entryValue.getOperation());
-                        attributeModifierPairList.add(Pair.of(attributeModifierEntry.getKey(), attributeModifier));
-                    }
-                }
+        for (MobEffectInstance inst : effects) {
+            MobEffect effect = inst.getEffect().value(); // Holder → MobEffect
 
-                if (effectInstance.getAmplifier() > 0 && effectInstance.getAmplifier() <= 20) {
-                    mutableComponent = Component.translatable("potion.withAmplifier", mutableComponent, Component.translatable("potion.potency." + effectInstance.getAmplifier()));
-                } else {
-                    mutableComponent = Component.translatable("potion.withDuration", mutableComponent, MobEffectUtil.formatDuration(effectInstance, 1.0F));
-                }
-                pTooltips.add(mutableComponent.withStyle(effect.getCategory().getTooltipFormatting()));
+            // ── base potion line ──
+            MutableComponent line = Component.translatable(effect.getDescriptionId());
+            if (inst.getAmplifier() > 0)
+                line.append(" ").append(Component.translatable("potion.potency." + inst.getAmplifier()));
+            if (showDuration && inst.getDuration() > 20)
+                line = Component.translatable("potion.withDuration", line,
+                        MobEffectUtil.formatDuration(inst, 1.0F, 1.0F));
+
+            tooltips.add(line.withStyle(effect.getCategory().getTooltipFormatting()));
+
+            // ── attribute modifiers ──
+            if (showAttributes) {
+                appendAttributeModifiers(inst, effect, tooltips);
             }
         }
+    }
 
-        if (!attributeModifierPairList.isEmpty()) {
-            for (Pair<Attribute, AttributeModifier> attributeModifierPair : attributeModifierPairList) {
-                AttributeModifier attributeModifier = attributeModifierPair.getValue();
+    /**
+     * Reflection‑based access to private field {@code MobEffect.attributeModifiers} and its record.
+     */
+    @SuppressWarnings("unchecked")
+    private static void appendAttributeModifiers(MobEffectInstance inst,
+                                                 MobEffect effect,
+                                                 List<Component> out) {
+        Map<Attribute, ?> map;
+        try {
+            Field f = MobEffect.class.getDeclaredField("attributeModifiers");
+            f.setAccessible(true);
+            map = (Map<Attribute, ?>) f.get(effect);
+        } catch (ReflectiveOperationException e) {
+            return;                        // field gone — skip gracefully
+        }
+        if (map.isEmpty()) return;
 
-                double baseModifierAmount = attributeModifier.getAmount();
-                double finalModiferAmount;
+        for (Map.Entry<Attribute, ?> entry : map.entrySet()) {
+            Attribute attribute = entry.getKey();
+            Object template    = entry.getValue();
+            AttributeModifier mod = createModifier(template, inst.getAmplifier());
+            if (mod == null) continue;
 
-                if (attributeModifier.getOperation() != AttributeModifier.Operation.MULTIPLY_BASE && attributeModifier.getOperation() != AttributeModifier.Operation.MULTIPLY_TOTAL) {
-                    finalModiferAmount = attributeModifier.getAmount();
-                } else {
-                    finalModiferAmount = attributeModifier.getAmount() * 100.0D;
-                }
-                if (baseModifierAmount > 0.0D) {
-                    pTooltips.add(Component.translatable(String.format("attribute.modifier.plus.%s", attributeModifier.getOperation().toValue()),
-                            ItemStack.ATTRIBUTE_MODIFIER_FORMAT.format(finalModiferAmount),
-                            Component.translatable(attributeModifierPair.getKey().getDescriptionId()))
-                            .withStyle(ChatFormatting.BLUE));
+            double amount  = mod.getAmount();
+            double display = switch (mod.getOperation()) {
+                case ADD_VALUE      -> amount;
+                case MULTIPLY_BASE, MULTIPLY_TOTAL -> amount * 100.0D;
+            };
 
-                } else if (baseModifierAmount < 0.0D) {
-                    finalModiferAmount *= -1.0D;
-                    pTooltips.add(Component.translatable(String.format("attribute.modifier.take.%s", attributeModifier.getOperation().toValue()),
-                            ItemStack.ATTRIBUTE_MODIFIER_FORMAT.format(finalModiferAmount),
-                            Component.translatable(attributeModifierPair.getKey().getDescriptionId()))
-                            .withStyle(ChatFormatting.RED));
-                }
-            }
+            Component attrLine = Component.translatable(
+                            "attribute.modifier." + (display > 0 ? "plus." : "take.") + mod.getOperation().toValue(),
+                            String.format("%.2f", display),
+                            Component.translatable(attribute.getDescriptionId()))
+                    .withStyle(display > 0 ? ChatFormatting.BLUE : ChatFormatting.RED);
+
+            out.add(attrLine);
+        }
+    }
+
+    /** Calls package‑private {@code AttributeTemplate#create(int)} via reflection. */
+    private static AttributeModifier createModifier(Object template, int amp) {
+        try {
+            Method m = template.getClass().getMethod("create", int.class);
+            m.setAccessible(true);
+            return (AttributeModifier) m.invoke(template, amp);
+        } catch (ReflectiveOperationException | ClassCastException ignored) {
+            return null;
         }
     }
 }

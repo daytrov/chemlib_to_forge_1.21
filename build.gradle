@@ -149,7 +149,8 @@ sourceSets.each {
     it.java.destinationDirectory = dir
 }
 
-// Игнорируем любой Java-код внутри _datagen_disabled
+// --- исключаем каталоги, которые не должны компилироваться ---
 tasks.withType(JavaCompile).configureEach {
+    exclude '**/_jei_disabled/**'
     exclude '**/_datagen_disabled/**'
 }

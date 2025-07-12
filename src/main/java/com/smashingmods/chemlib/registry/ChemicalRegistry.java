@@ -18,10 +18,11 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
-import net.minecraft.world.entity.ai.navigation.BlockPathType;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraftforge.common.SoundActions;
 import net.minecraftforge.fluids.FluidType;
 import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.core.Holder;
 
 import java.util.*;
 
@@ -138,16 +139,26 @@ public class ChemicalRegistry {
 
     public static List<MobEffectInstance> mobEffectsFactory(JsonObject object) {
         List<MobEffectInstance> effectsList = new ArrayList<>();
+
         JsonArray effects = object.getAsJsonArray("effect");
         if (effects != null) {
             for (JsonElement effect : effects) {
                 JsonObject effectObject = effect.getAsJsonObject();
+
                 String effectLocation = effectObject.get("location").getAsString();
-                int effectDuration = effectObject.get("duration").getAsInt();
-                int effectAmplifier = effectObject.get("amplifier").getAsInt();
-                MobEffect mobEffect = MOB_EFFECTS.getValue(ResourceLocation.fromNamespaceAndPath(effectLocation));
-                if (mobEffect != null) {
-                    effectsList.add(new MobEffectInstance(mobEffect, effectDuration, effectAmplifier));
+                int    effectDuration  = effectObject.get("duration").getAsInt();
+                int    effectAmplifier = effectObject.get("amplifier").getAsInt();
+
+                // получаем Holder<MobEffect> по ID
+                Holder<MobEffect> mobEffectHolder =
+                        MOB_EFFECTS.getHolder(ResourceLocation.parse(effectLocation))
+                                .orElse(null);
+
+                if (mobEffectHolder != null) {
+                    effectsList.add(new MobEffectInstance(
+                            mobEffectHolder,     // ← принимает Holder
+                            effectDuration,
+                            effectAmplifier));
                 }
             }
         }
@@ -161,7 +172,7 @@ public class ChemicalRegistry {
         int temperature = pObject.has("temperature") ? pObject.get("temperature").getAsInt() : 300;
         float motionScale = pObject.has("motion_scale") ? pObject.get("motion_scale").getAsFloat() : 0.014f;
         int fallDistanceModifier = pObject.has("fall_distance_modifier") ? pObject.get("fall_distance_modifier").getAsInt() : 0;
-        BlockPathType pathType = pObject.has("path_type") ? BlockPathType.valueOf(pObject.get("path_type").getAsString().toUpperCase(Locale.ROOT)) : BlockPathType.WATER;
+        PathType pathType = pObject.has("path_type") ? PathType.valueOf(pObject.get("path_type").getAsString().toUpperCase(Locale.ROOT)) : PathType.WATER;
         boolean pushEntity = !pObject.has("push_entity") || pObject.get("push_entity").getAsBoolean();
         boolean canSwim = !pObject.has("can_swim") || pObject.get("can_swim").getAsBoolean();
         boolean canDrown = pObject.has("can_drown") && pObject.get("can_drown").getAsBoolean();
